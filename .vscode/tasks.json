@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "g++ build active file",
+      "command": "/usr/bin/g++",
+      "args": [
+        "-std=c++11",
+        "-I${workspaceFolder}/lib/",
+        "${file}",
+        "${workspaceFolder}/src/BSpline.cpp",
+        "${workspaceFolder}/src/Curve.cpp",
+        "${workspaceFolder}/src/trajectory_gen.cpp",
+        "${workspaceFolder}/src/Vector.cpp",
+        "-o",
+        "${workspaceFolder}/build/${fileBasenameNoExtension}"
+      ],
+      "options": {
+        "cwd": "/usr/bin"
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}

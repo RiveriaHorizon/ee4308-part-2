@@ -1,0 +1,12 @@
+[submodule "matplotlib-cpp"]
+	path = matplotlib-cpp
+	url = https://github.com/lava/matplotlib-cpp.git
+[submodule "cpp-spline"]
+	path = cpp-spline
+	url = https://github.com/chen0040/cpp-spline
+[submodule "mav_trajectory_generation"]
+	path = mav_trajectory_generation
+	url = https://github.com/ethz-asl/mav_trajectory_generation
+[submodule "mrasl_mav_traj"]
+	path = mrasl_mav_traj
+	url = https://github.com/MRASL/mrasl_mav_traj.git
