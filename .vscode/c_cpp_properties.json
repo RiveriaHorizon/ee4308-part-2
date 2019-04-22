@@ -9,6 +9,10 @@
                 "/opt/ros/kinetic/include",
                 "/home/riveria/CodeProjects/ROS/ee4308/src/project_1/include",
                 "/usr/include",
+                "${workspaceFolder}/lib",
+                "${workspaceFolder}/cpp-spline/spline/src/main/cpp",
+                "${workspaceFolder}/matplotlib-cpp",
+                "/usr/include/python2.7",
                 "${workspaceFolder}/lib"
             ],
             "name": "Linux",

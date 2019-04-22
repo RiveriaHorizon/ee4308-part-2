@@ -7,14 +7,17 @@
       "command": "/usr/bin/g++",
       "args": [
         "-std=c++11",
-        "-I${workspaceFolder}/lib/",
         "${file}",
-        "${workspaceFolder}/src/BSpline.cpp",
-        "${workspaceFolder}/src/Curve.cpp",
-        "${workspaceFolder}/src/trajectory_gen.cpp",
-        "${workspaceFolder}/src/Vector.cpp",
+        "${workspaceFolder}/cpp-spline/spline/src/main/cpp/BSpline.cpp",
+        "${workspaceFolder}/cpp-spline/spline/src/main/cpp/Curve.cpp",
+        "${workspaceFolder}/cpp-spline/spline/src/main/cpp/Vector.cpp",
         "-o",
-        "${workspaceFolder}/build/${fileBasenameNoExtension}"
+        "${workspaceFolder}/build/${fileBasenameNoExtension}",
+        "-I${workspaceFolder}/lib/",
+        "-I${workspaceFolder}/cpp-spline/spline/src/main/cpp/",
+        "-I${workspaceFolder}/matplotlib-cpp/",
+        "-I/usr/include/python2.7",
+        "-lpython2.7"
       ],
       "options": {
         "cwd": "/usr/bin"
