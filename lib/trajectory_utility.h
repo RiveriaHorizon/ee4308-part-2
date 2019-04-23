@@ -284,7 +284,8 @@ double calc_distance(double x1, double x2, double y1, double y2)
 
 void plot_vel_acc(double total_time, double frequency,
                   std::vector<double> row_velocity, std::vector<double> col_velocity,
-                  std::vector<double> row_acceleration, std::vector<double> col_acceleration)
+                  std::vector<double> row_acceleration, std::vector<double> col_acceleration,
+                  std::string name)
 {
     std::vector<double> x_axis_tj;
     for (int i = 1; i <= (int)(total_time * frequency); i++)
@@ -300,10 +301,10 @@ void plot_vel_acc(double total_time, double frequency,
     matplotlibcpp::xlabel("Time [s]");
     matplotlibcpp::ylabel("Velocity [m/s] and Acceleration [m/s2]");
     matplotlibcpp::legend();
-    matplotlibcpp::show();
+    matplotlibcpp::save("graph_plots/vel_acc_" + name + ".png");
 }
 
-void plot_position(Curve *curve)
+void plot_position(Curve *curve, std::string name)
 {
     std::vector<double> x_spline, y_spline;
     for (int i = 0; i < curve->node_count(); i++)
@@ -319,7 +320,7 @@ void plot_position(Curve *curve)
     matplotlibcpp::ylabel("X-Coordinate");
 
     matplotlibcpp::legend();
-    matplotlibcpp::show();
+    matplotlibcpp::save("graph_plots/position_" + name + ".png");
 }
 
 void trajectory_smoothing(std::ofstream &outfile,
@@ -350,7 +351,6 @@ void trajectory_smoothing(std::ofstream &outfile,
     }
 
     // Create position, velocity and acceleration profiles at each direction change defined in the line segments
-
     if (C)
     {
         frequency = FREQUENCY_B_C;
@@ -381,38 +381,6 @@ void trajectory_smoothing(std::ofstream &outfile,
         double average_velocity = 0.8;
         double time_taken = calc_distance(x_coordinate, x_next_coordinate, y_coordinate, y_next_coordinate) / average_velocity;
 
-        // std::vector<double> row_position = position_trajectory_gen(x_coordinate, x_next_coordinate, frequency, time_taken);
-        // std::vector<double> col_position = position_trajectory_gen(y_coordinate, y_next_coordinate, frequency, time_taken);
-        // std::vector<double> row_velocity = velocity_trajectory_gen(x_coordinate, x_next_coordinate, frequency, time_taken);
-        // std::vector<double> col_velocity = velocity_trajectory_gen(y_coordinate, y_next_coordinate, frequency, time_taken);
-        // std::vector<double> row_acceleration = acceleration_trajectory_gen(x_coordinate, x_next_coordinate, frequency, time_taken);
-        // std::vector<double> col_acceleration = acceleration_trajectory_gen(y_coordinate, y_next_coordinate, frequency, time_taken);
-
-        // for (int iteration = 0; iteration < row_position.size(); iteration++)
-        // {
-        //     row_pose_list.push_back(row_position[iteration]);
-        // }
-        // for (int iteration = 0; iteration < col_position.size(); iteration++)
-        // {
-        //     col_pose_list.push_back(col_position[iteration]);
-        // }
-        // for (int iteration = 0; iteration < row_velocity.size(); iteration++)
-        // {
-        //     row_vel_list.push_back(row_velocity[iteration]);
-        // }
-        // for (int iteration = 0; iteration < col_velocity.size(); iteration++)
-        // {
-        //     col_vel_list.push_back(col_velocity[iteration]);
-        // }
-        // for (int iteration = 0; iteration < row_acceleration.size(); iteration++)
-        // {
-        //     row_acc_list.push_back(row_acceleration[iteration]);
-        // }
-        // for (int iteration = 0; iteration < col_acceleration.size(); iteration++)
-        // {
-        //     col_acc_list.push_back(col_acceleration[iteration]);
-        // }
-
         total_time = time_taken + total_time;
     }
     std::cout << "Total time taken: " << total_time << std::endl;
@@ -427,8 +395,6 @@ void trajectory_smoothing(std::ofstream &outfile,
     while (cartesian_coordinate_list.size() > 0)
     {
         curve->add_way_point(cartesian_coordinate_list.front());
-        // std::cout << "X: " << line_segmented_path.front().x << "\t"
-        //           << "Y: " << line_segmented_path.front().y << std::endl;
         cartesian_coordinate_list.pop_front();
     }
 
@@ -444,10 +410,20 @@ void trajectory_smoothing(std::ofstream &outfile,
                                       row_acceleration[i], col_acceleration[i], 0.0,
                                       0.0, 0.0);
     }
-    plot_vel_acc(total_time, frequency,
-                 row_velocity, col_velocity,
-                 row_acceleration, col_acceleration);
-    plot_position(curve);
+    if (C)
+    {
+        plot_vel_acc(total_time, frequency,
+                     row_velocity, col_velocity,
+                     row_acceleration, col_acceleration, "B-C");
+        plot_position(curve, "B-C");
+    }
+    else
+    {
+        plot_vel_acc(total_time, frequency,
+                     row_velocity, col_velocity,
+                     row_acceleration, col_acceleration, "A-B");
+        plot_position(curve, "A-B");
+    }
 }
 
 void calc_coeff(std::vector<std::vector<double>> inv_matrix, double t0, double tf, double q0, double qf, double vel0, double velf, double acc0, double accf)
