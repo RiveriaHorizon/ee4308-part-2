@@ -56,54 +56,6 @@ std::vector<double> acceleration_trajectory_gen(double start_pose, double desire
     return trajectory_derivative_two;
 }
 
-std::vector<std::vector<double>> calc_matrix_inverse(int n, std::vector<std::vector<double>> matrix)
-{
-    int i, j, k;
-    std::vector<std::vector<double>> a;
-    float t;
-    for (i = 0; i < n; i++)
-        for (j = 0; j < n; j++)
-            a[i][j] = matrix[i][j];
-    for (i = 0; i < n; i++)
-    {
-        for (j = n; j < 2 * n; j++)
-        {
-            if (i == j - n)
-                a[i][j] = 1;
-            else
-                a[i][j] = 0;
-        }
-    }
-    for (i = 0; i < n; i++)
-    {
-        t = a[i][i];
-        for (j = i; j < 2 * n; j++)
-            a[i][j] = a[i][j] / t;
-        for (j = 0; j < n; j++)
-        {
-            if (i != j)
-            {
-                t = a[j][i];
-                for (k = 0; k < 2 * n; k++)
-                    a[j][k] = a[j][k] - t * a[i][k];
-            }
-        }
-    }
-    std::cout << "\n\nInverse matrix\n\n";
-    for (i = 0; i < n; i++)
-    {
-        for (j = n; j < 2 * n; j++)
-            std::cout << "\t" << a[i][j];
-        std::cout << "\n";
-    }
-    return a;
-}
-
-int calc_path_steps(int row, int col,
-                    int (*traceback)[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT])
-{
-}
-
 void trajectory_smoothing(std::ofstream &outfile,
                           int (*traceback)[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT],
                           bool C)
@@ -405,5 +357,49 @@ void calc_coeff(std::vector<std::vector<double>> inv_matrix, double t0, double t
     coeff_vector.push_back((inv_matrix[5][0] * q0) + (inv_matrix[5][1] * vel0) + (inv_matrix[5][2] * acc0) +
                            (inv_matrix[5][3] * qf * tf) + (inv_matrix[5][4] * velf * tf * tf) + (inv_matrix[5][5] * accf * tf * tf * tf)); //a6
 }
+
+std::vector<std::vector<double>> calc_matrix_inverse(int n, std::vector<std::vector<double>> matrix)
+{
+    int i, j, k;
+    std::vector<std::vector<double>> a;
+    float t;
+    for (i = 0; i < n; i++)
+        for (j = 0; j < n; j++)
+            a[i][j] = matrix[i][j];
+    for (i = 0; i < n; i++)
+    {
+        for (j = n; j < 2 * n; j++)
+        {
+            if (i == j - n)
+                a[i][j] = 1;
+            else
+                a[i][j] = 0;
+        }
+    }
+    for (i = 0; i < n; i++)
+    {
+        t = a[i][i];
+        for (j = i; j < 2 * n; j++)
+            a[i][j] = a[i][j] / t;
+        for (j = 0; j < n; j++)
+        {
+            if (i != j)
+            {
+                t = a[j][i];
+                for (k = 0; k < 2 * n; k++)
+                    a[j][k] = a[j][k] - t * a[i][k];
+            }
+        }
+    }
+    std::cout << "\n\nInverse matrix\n\n";
+    for (i = 0; i < n; i++)
+    {
+        for (j = n; j < 2 * n; j++)
+            std::cout << "\t" << a[i][j];
+        std::cout << "\n";
+    }
+    return a;
+}
+
 }; // namespace trajectory_utility
 #endif
