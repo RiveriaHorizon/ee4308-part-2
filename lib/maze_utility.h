@@ -36,7 +36,8 @@ void reset_maze(int boundary_limit,
                 int (*maze)[BOUNDARY_ARRAY_LIMIT][BOUNDARY_ARRAY_LIMIT],
                 int (*traceback)[BOUNDARY_ARRAY_LIMIT][BOUNDARY_ARRAY_LIMIT],
                 int (*G_cost)[BOUNDARY_ARRAY_LIMIT][BOUNDARY_ARRAY_LIMIT],
-                int (*H_cost)[BOUNDARY_ARRAY_LIMIT][BOUNDARY_ARRAY_LIMIT])
+                int (*H_cost)[BOUNDARY_ARRAY_LIMIT][BOUNDARY_ARRAY_LIMIT],
+                bool (*check_cost)[BOUNDARY_ARRAY_LIMIT][BOUNDARY_ARRAY_LIMIT])
 {
     for (int i = 0; i < boundary_limit; i++)
     {
@@ -48,6 +49,7 @@ void reset_maze(int boundary_limit,
                 (*traceback)[i][j] = 0;
                 (*G_cost)[i][j] = 0;
                 (*H_cost)[i][j] = 0;
+                (*check_cost)[i][j] = 0;
             }
         }
     }

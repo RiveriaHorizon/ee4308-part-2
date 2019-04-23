@@ -16,7 +16,7 @@ int maze[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT]
 int traceback[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT];
 int G_cost[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT];
 int H_cost[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT];
-bool Boolean_array[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT];
+bool check_cost[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT];
 
 int main()
 {
@@ -49,7 +49,7 @@ int main()
 	quadrotor_utility::take_off(outfile);
 	//end of generating take-off path from A//
 
-	maze_utility::reset_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback, &G_cost, &H_cost);
+	maze_utility::reset_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback, &G_cost, &H_cost, &check_cost);
 
 	//start generating path from A to B//
 	// floodfill(decode_coordinate(POINT_A_Y), decode_coordinate(POINT_A_X), decode_coordinate(POINT_B_Y), decode_coordinate(POINT_B_X));
@@ -57,11 +57,8 @@ int main()
 						  maze_utility::decode_coordinate(maze_utility::POINT_A_X, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER),
 						  maze_utility::decode_coordinate(maze_utility::POINT_B_Y, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER),
 						  maze_utility::decode_coordinate(maze_utility::POINT_B_X, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER),
-						  &maze, &traceback, &G_cost, &H_cost);
+						  &maze, &traceback, &G_cost, &H_cost, &check_cost);
 	//end of generating path from A to B//
-
-	//prints array to console for debugging
-	// maze_utility::print_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback);
 
 	//start interpolating path planned and outputs to path.txt
 	trajectory_utility::trajectory_smoothing(outfile, &traceback, false);
@@ -71,7 +68,7 @@ int main()
 	quadrotor_utility::hover(outfile);
 	//end hover function
 
-	maze_utility::reset_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback, &G_cost, &H_cost);
+	maze_utility::reset_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback, &G_cost, &H_cost, &check_cost);
 
 	//start generating path from B to C//
 	// floodfill(decode_coordinate(POINT_B_Y), decode_coordinate(POINT_B_X), decode_coordinate(POINT_C_Y), decode_coordinate(POINT_C_X));
@@ -79,11 +76,8 @@ int main()
 						  maze_utility::decode_coordinate(maze_utility::POINT_B_X, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER),
 						  maze_utility::decode_coordinate(maze_utility::POINT_C_Y, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER),
 						  maze_utility::decode_coordinate(maze_utility::POINT_C_X, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER),
-						  &maze, &traceback, &G_cost, &H_cost);
+						  &maze, &traceback, &G_cost, &H_cost, &check_cost);
 	//end of generating path from B to C//
-
-	//prints array to console for debugging
-	// maze_utility::print_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback);
 
 	//start interpolating path planned and outputs to path.txt
 	trajectory_utility::trajectory_smoothing(outfile, &traceback, true);
