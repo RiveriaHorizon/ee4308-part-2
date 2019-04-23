@@ -34,6 +34,7 @@ std::vector<double> velocity_trajectory_gen(double start_pose, double desired_po
     std::vector<double> trajectory_derivative;
     double time_frequency = move_time * frequency;
 
+    std::cout << "Time frequency: " << time_frequency << "\t" << move_time << "\t" << frequency << std::endl;
     for (int time = 1; time <= time_frequency; time++)
     {
         trajectory_derivative.push_back(frequency * (desired_pose - start_pose) *
@@ -168,8 +169,8 @@ std::vector<std::deque<Vector>> create_coordinate_lists(int (*traceback)[maze_ut
         // Search through the traceback array to get the path starting from 0.
         // Record the coordinates with reference to the array and cartesian at current iteration and next iteration
         int i_coordinate = 0, j_coordinate = 0,
-            i_next_coordinate = 0, j_next_coordinate = 0,
-            x_coordinate = 0, y_coordinate = 0;
+            i_next_coordinate = 0, j_next_coordinate = 0;
+        double x_coordinate = 0, y_coordinate = 0;
         for (int row = 0; row < maze_utility::BOUNDARY_ARRAY_LIMIT; row++)
         {
             for (int col = 0; col < maze_utility::BOUNDARY_ARRAY_LIMIT; col++)
@@ -326,11 +327,12 @@ void trajectory_smoothing(std::ofstream &outfile,
                           bool C)
 {
     // Constants initialization
-    const int CURVE_A_B = 15;     // Number of steps from A to B
-    const int CURVE_B_C = 20;     // Number of steps from B to C
-    const int FREQUENCY_A_B = 15; // Frequency from A to B for Vel-Acc profiling
-    const int FREQUENCY_B_C = 15; // Frequency from B to C for Vel-Acc profiling
+    const int FREQUENCY_A_B = 3; // Frequency from A to B for Vel-Acc profiling
+    const int FREQUENCY_B_C = 5; // Frequency from B to C for Vel-Acc profiling
+
     // Variable initialization
+    double total_time = 0.0;
+    double frequency;
     int iteration = 0;
     int count = calc_path_steps(traceback);
     std::vector<double> row_pose_list, col_pose_list,
@@ -348,8 +350,7 @@ void trajectory_smoothing(std::ofstream &outfile,
     }
 
     // Create position, velocity and acceleration profiles at each direction change defined in the line segments
-    double total_time = 0.0;
-    double frequency;
+
     if (C)
     {
         frequency = FREQUENCY_B_C;
@@ -361,24 +362,23 @@ void trajectory_smoothing(std::ofstream &outfile,
 
     double x_next_coordinate, y_next_coordinate,
         x_coordinate, y_coordinate;
-    for (int i = 0; i < line_segmented_path.size(); i++)
+    for (int i = 0; i < cartesian_coordinate_list.size(); i++)
     {
-        if (i != line_segmented_path.size())
+        if (i != cartesian_coordinate_list.size())
         {
-            x_next_coordinate = line_segmented_path[i + 1].x;
-            y_next_coordinate = line_segmented_path[i + 1].y;
-            x_coordinate = line_segmented_path[i].x;
-            y_coordinate = line_segmented_path[i].y;
+            x_next_coordinate = cartesian_coordinate_list[i + 1].x;
+            y_next_coordinate = cartesian_coordinate_list[i + 1].y;
+            x_coordinate = cartesian_coordinate_list[i].x;
+            y_coordinate = cartesian_coordinate_list[i].y;
         }
         else
         {
-            x_next_coordinate = line_segmented_path[i].x;
-            y_next_coordinate = line_segmented_path[i].y;
-            x_coordinate = line_segmented_path[i].x;
-            y_coordinate = line_segmented_path[i].y;
+            x_next_coordinate = cartesian_coordinate_list[i].x;
+            y_next_coordinate = cartesian_coordinate_list[i].y;
+            x_coordinate = cartesian_coordinate_list[i].x;
+            y_coordinate = cartesian_coordinate_list[i].y;
         }
         double average_velocity = 0.8;
-        std::cout << calc_distance(x_coordinate, x_next_coordinate, y_coordinate, y_next_coordinate) << std::endl;
         double time_taken = calc_distance(x_coordinate, x_next_coordinate, y_coordinate, y_next_coordinate) / average_velocity;
 
         // std::vector<double> row_position = position_trajectory_gen(x_coordinate, x_next_coordinate, frequency, time_taken);
@@ -415,27 +415,21 @@ void trajectory_smoothing(std::ofstream &outfile,
 
         total_time = time_taken + total_time;
     }
-    std::vector<double> row_velocity = velocity_trajectory_gen(line_segmented_path[0].x, line_segmented_path[line_segmented_path.size() - 1].x, frequency, total_time);
-    std::vector<double> col_velocity = velocity_trajectory_gen(line_segmented_path[0].y, line_segmented_path[line_segmented_path.size() - 1].y, frequency, total_time);
-    std::vector<double> row_acceleration = acceleration_trajectory_gen(line_segmented_path[0].x, line_segmented_path[line_segmented_path.size() - 1].x, frequency, total_time);
-    std::vector<double> col_acceleration = acceleration_trajectory_gen(line_segmented_path[0].y, line_segmented_path[line_segmented_path.size() - 1].y, frequency, total_time);
+    std::cout << "Total time taken: " << total_time << std::endl;
+    std::vector<double> row_velocity = velocity_trajectory_gen(cartesian_coordinate_list[0].x, cartesian_coordinate_list[cartesian_coordinate_list.size() - 1].x, frequency, total_time);
+    std::vector<double> col_velocity = velocity_trajectory_gen(cartesian_coordinate_list[0].y, cartesian_coordinate_list[cartesian_coordinate_list.size() - 1].y, frequency, total_time);
+    std::vector<double> row_acceleration = acceleration_trajectory_gen(cartesian_coordinate_list[0].x, cartesian_coordinate_list[cartesian_coordinate_list.size() - 1].x, frequency, total_time);
+    std::vector<double> col_acceleration = acceleration_trajectory_gen(cartesian_coordinate_list[0].y, cartesian_coordinate_list[cartesian_coordinate_list.size() - 1].y, frequency, total_time);
 
     Curve *curve = new BSpline();
-    if (C) //Path from point B to point C
-    {
-        curve->set_steps(CURVE_B_C);
-    }
-    else
-    {
-        curve->set_steps(CURVE_A_B);
-    }
+    curve->set_steps(total_time * frequency / cartesian_coordinate_list.size()); //Number of intermediary steps from one point to another
 
-    while (line_segmented_path.size() > 0)
+    while (cartesian_coordinate_list.size() > 0)
     {
-        curve->add_way_point(line_segmented_path.front());
+        curve->add_way_point(cartesian_coordinate_list.front());
         // std::cout << "X: " << line_segmented_path.front().x << "\t"
         //           << "Y: " << line_segmented_path.front().y << std::endl;
-        line_segmented_path.pop_front();
+        cartesian_coordinate_list.pop_front();
     }
 
     std::cout << "Number of items in row_vel_list: " << row_velocity.size() << "\t"
