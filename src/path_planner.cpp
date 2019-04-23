@@ -1,5 +1,3 @@
-#define _USE_MATH_DEFINES
-
 //From cpp-spline
 #include "BSpline.h"
 #include "Curve.h"
@@ -9,7 +7,8 @@
 //For path-planning
 #include "maze_algorithm.h"
 #include "maze_utility.h"
-#include "trajectory_gen.h"
+#include "trajectory_utility.h"
+#include "quadrotor_utility.h"
 
 void trajectory_smoothing(std::ofstream &outfile);
 
@@ -48,7 +47,7 @@ int main()
 
 	//start of generating take-off path from A//
 	//takeoff(POINT_A_X, POINT_A_Y, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, outfile);
-	maze_utility::take_off(outfile);
+	quadrotor_utility::take_off(outfile);
 	//end of generating take-off path from A//
 
 	maze_utility::reset_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback, &G_cost, &H_cost);
@@ -91,7 +90,7 @@ int main()
 	//end
 
 	//start of generating landing path from C//
-	maze_utility::landing(outfile);
+	quadrotor_utility::landing(outfile);
 	//end of generating landing path from C//
 
 	return 0;
