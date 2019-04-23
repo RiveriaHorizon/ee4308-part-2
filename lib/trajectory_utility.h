@@ -281,18 +281,18 @@ double calc_distance(double x1, double x2, double y1, double y2)
     return sqrt(pow(x1 - x2, 2.0) + pow(y1 - y2, 2.0));
 }
 
-void plot_vel_acc(double total_time, double frequency,
-                  std::vector<double> row_velocity, std::vector<double> col_velocity,
-                  std::vector<double> row_acceleration, std::vector<double> col_acceleration,
-                  std::string name)
+void plot_pose_vel_acc(Curve *curve, double total_time, double frequency,
+                       std::vector<double> row_velocity, std::vector<double> col_velocity,
+                       std::vector<double> row_acceleration, std::vector<double> col_acceleration,
+                       std::string name)
 {
-    matplotlibcpp::clf();
     std::vector<double> x_axis_tj;
     for (int i = 1; i <= (int)(total_time * frequency); i++)
     {
         x_axis_tj.push_back(i / frequency);
     }
 
+    matplotlibcpp::clf();
     matplotlibcpp::named_plot("X-Velocity", x_axis_tj, row_velocity);
     matplotlibcpp::named_plot("Y-Velocity", x_axis_tj, col_velocity);
     matplotlibcpp::named_plot("X-Acceleration", x_axis_tj, row_acceleration);
@@ -305,7 +305,7 @@ void plot_vel_acc(double total_time, double frequency,
     matplotlibcpp::close();
 }
 
-void plot_position(Curve *curve, std::string name)
+void plot_path(Curve *curve, std::string name)
 {
     std::vector<double> x_spline, y_spline;
     for (int i = 0; i < curve->node_count(); i++)
@@ -313,6 +313,7 @@ void plot_position(Curve *curve, std::string name)
         x_spline.push_back(curve->node(i).x);
         y_spline.push_back(curve->node(i).y);
     }
+
     matplotlibcpp::clf();
     matplotlibcpp::named_plot("Path", y_spline, x_spline);
     matplotlibcpp::xlim(3, -3);
@@ -330,7 +331,7 @@ void trajectory_smoothing(std::ofstream &outfile,
                           bool is_going_to_C)
 {
     // Constants initialization
-    const int FREQUENCY_A_B = 10;       // Frequency from A to B for Vel-Acc profiling
+    const int FREQUENCY_A_B = 11;       // Frequency from A to B for Vel-Acc profiling
     const int FREQUENCY_B_C = 12;       // Frequency from B to C for Vel-Acc profiling
     const double STEP_MULTIPLIER = 1.3; // Constant to reduce spline step size
 
@@ -416,17 +417,17 @@ void trajectory_smoothing(std::ofstream &outfile,
     }
     if (is_going_to_C)
     {
-        plot_vel_acc(total_time, frequency,
-                     row_velocity, col_velocity,
-                     row_acceleration, col_acceleration, "B-C");
-        plot_position(curve, "B-C");
+        plot_pose_vel_acc(curve, total_time, frequency,
+                          row_velocity, col_velocity,
+                          row_acceleration, col_acceleration, "B-C");
+        plot_path(curve, "B-C");
     }
     else
     {
-        plot_vel_acc(total_time, frequency,
-                     row_velocity, col_velocity,
-                     row_acceleration, col_acceleration, "A-B");
-        plot_position(curve, "A-B");
+        plot_pose_vel_acc(curve, total_time, frequency,
+                          row_velocity, col_velocity,
+                          row_acceleration, col_acceleration, "A-B");
+        plot_path(curve, "A-B");
     }
 }
 
