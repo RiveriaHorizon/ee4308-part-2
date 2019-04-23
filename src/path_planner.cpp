@@ -7,8 +7,8 @@
 //For path-planning
 #include "maze_algorithm.h"
 #include "maze_utility.h"
-#include "trajectory_utility.h"
 #include "quadrotor_utility.h"
+#include "trajectory_utility.h"
 
 void trajectory_smoothing(std::ofstream &outfile);
 
@@ -46,7 +46,6 @@ int main()
 	//end of generate droth path//
 
 	//start of generating take-off path from A//
-	//takeoff(POINT_A_X, POINT_A_Y, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, outfile);
 	quadrotor_utility::take_off(outfile);
 	//end of generating take-off path from A//
 
@@ -67,6 +66,10 @@ int main()
 	//start interpolating path planned and outputs to path.txt
 	trajectory_utility::trajectory_smoothing(outfile, &traceback, false);
 	//end trajectory_smoothing function
+
+	//determine if quadrotor should hover at point B
+	quadrotor_utility::hover(outfile);
+	//end hover function
 
 	maze_utility::reset_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback, &G_cost, &H_cost);
 
@@ -90,7 +93,7 @@ int main()
 	//end
 
 	//start of generating landing path from C//
-	quadrotor_utility::landing(outfile);
+	// quadrotor_utility::landing(outfile);
 	//end of generating landing path from C//
 
 	return 0;

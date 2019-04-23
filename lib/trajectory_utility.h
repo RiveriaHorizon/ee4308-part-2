@@ -3,10 +3,10 @@
 
 #define _USE_MATH_DEFINES
 #include <algorithm>
-#include <iostream>
 #include <cmath>
-#include <vector>
 #include <deque>
+#include <iostream>
+#include <vector>
 
 #include "quadrotor_utility.h"
 
@@ -220,9 +220,9 @@ std::deque<Vector> create_line_segmented_path(int count, std::deque<Vector> arra
     double prev_direction_ls = std::numeric_limits<double>::infinity();
     double calculated_constraint = 0.0;
 
-    line_segmented_path.push_back(Vector((int)array_coordinate_list[FIRST].x, (int)array_coordinate_list[FIRST].y, 0.0));
-    line_segmented_path.push_back(Vector((int)array_coordinate_list[FIRST].x, (int)array_coordinate_list[FIRST].y, 0.0));
-    line_segmented_path.push_back(Vector((int)array_coordinate_list[FIRST].x, (int)array_coordinate_list[FIRST].y, 0.0));
+    line_segmented_path.push_back(Vector(array_coordinate_list[FIRST].x, array_coordinate_list[FIRST].y, 0.0));
+    line_segmented_path.push_back(Vector(array_coordinate_list[FIRST].x, array_coordinate_list[FIRST].y, 0.0));
+    line_segmented_path.push_back(Vector(array_coordinate_list[FIRST].x, array_coordinate_list[FIRST].y, 0.0));
     for (int outer_iteration = 0; outer_iteration < count; outer_iteration++)
     {
         for (int inner_iteration = outer_iteration + 1; inner_iteration < count; inner_iteration++)
@@ -242,7 +242,7 @@ std::deque<Vector> create_line_segmented_path(int count, std::deque<Vector> arra
             {
                 calculated_constraint = std::fabs((direction_ls - prev_direction_ls) / prev_direction_ls) * 100;
 
-                if (calculated_constraint > 30 && calculated_constraint < 60)
+                if (calculated_constraint > 30 && calculated_constraint < 62)
                 {
                     line_segmented_path.push_back(Vector(array_coordinate_list[inner_iteration].x,
                                                          array_coordinate_list[inner_iteration].y,
@@ -269,22 +269,68 @@ std::deque<Vector> create_line_segmented_path(int count, std::deque<Vector> arra
             break;
         }
     }
-    line_segmented_path.push_back(Vector((int)array_coordinate_list[LAST].x, (int)array_coordinate_list[LAST].y, 0.0));
-    line_segmented_path.push_back(Vector((int)array_coordinate_list[LAST].x, (int)array_coordinate_list[LAST].y, 0.0));
-    line_segmented_path.push_back(Vector((int)array_coordinate_list[LAST].x, (int)array_coordinate_list[LAST].y, 0.0));
+    line_segmented_path.push_back(Vector(array_coordinate_list[LAST].x, array_coordinate_list[LAST].y, 0.0));
+    line_segmented_path.push_back(Vector(array_coordinate_list[LAST].x, array_coordinate_list[LAST].y, 0.0));
+    line_segmented_path.push_back(Vector(array_coordinate_list[LAST].x, array_coordinate_list[LAST].y, 0.0));
 
     return line_segmented_path;
 }
 
-double calc_distance(double x1, double y1, double x2, double y2)
+double calc_distance(double x1, double x2, double y1, double y2)
 {
     return sqrt(pow(x1 - x2, 2.0) + pow(y1 - y2, 2.0));
+}
+
+void plot_vel_acc(double total_time, double frequency,
+                  std::vector<double> row_velocity, std::vector<double> col_velocity,
+                  std::vector<double> row_acceleration, std::vector<double> col_acceleration)
+{
+    std::vector<double> x_axis_tj;
+    for (int i = 1; i <= (int)(total_time * frequency); i++)
+    {
+        x_axis_tj.push_back(i / frequency);
+    }
+
+    matplotlibcpp::named_plot("X-Velocity", x_axis_tj, row_velocity);
+    matplotlibcpp::named_plot("Y-Velocity", x_axis_tj, col_velocity);
+    matplotlibcpp::named_plot("X-Acceleration", x_axis_tj, row_acceleration);
+    matplotlibcpp::named_plot("Y-Acceleration", x_axis_tj, col_acceleration);
+    matplotlibcpp::title("Minimum Jerk Trajectory");
+    matplotlibcpp::xlabel("Time [s]");
+    matplotlibcpp::ylabel("Velocity [m/s] and Acceleration [m/s2]");
+    matplotlibcpp::legend();
+    matplotlibcpp::show();
+}
+
+void plot_position(Curve *curve)
+{
+    std::vector<double> x_spline, y_spline;
+    for (int i = 0; i < curve->node_count(); i++)
+    {
+        x_spline.push_back(curve->node(i).x);
+        y_spline.push_back(curve->node(i).y);
+    }
+
+    matplotlibcpp::named_plot("Path", y_spline, x_spline);
+    matplotlibcpp::xlim(3, -3);
+    matplotlibcpp::ylim(-3, 3);
+    matplotlibcpp::xlabel("Y-Coordinate");
+    matplotlibcpp::ylabel("X-Coordinate");
+
+    matplotlibcpp::legend();
+    matplotlibcpp::show();
 }
 
 void trajectory_smoothing(std::ofstream &outfile,
                           int (*traceback)[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT],
                           bool C)
 {
+    // Constants initialization
+    const int CURVE_A_B = 15;     // Number of steps from A to B
+    const int CURVE_B_C = 20;     // Number of steps from B to C
+    const int FREQUENCY_A_B = 15; // Frequency from A to B for Vel-Acc profiling
+    const int FREQUENCY_B_C = 15; // Frequency from B to C for Vel-Acc profiling
+    // Variable initialization
     int iteration = 0;
     int count = calc_path_steps(traceback);
     std::vector<double> row_pose_list, col_pose_list,
@@ -303,22 +349,44 @@ void trajectory_smoothing(std::ofstream &outfile,
 
     // Create position, velocity and acceleration profiles at each direction change defined in the line segments
     double total_time = 0.0;
-    double frequency = 3;
+    double frequency;
+    if (C)
+    {
+        frequency = FREQUENCY_B_C;
+    }
+    else
+    {
+        frequency = FREQUENCY_A_B;
+    }
+
+    double x_next_coordinate, y_next_coordinate,
+        x_coordinate, y_coordinate;
     for (int i = 0; i < line_segmented_path.size(); i++)
     {
-        double x_next_coordinate = line_segmented_path[i + 1].x;
-        double y_next_coordinate = line_segmented_path[i + 1].y;
-        double x_coordinate = line_segmented_path[i].x;
-        double y_coordinate = line_segmented_path[i].y;
-        double average_velocity = 0.5;
+        if (i != line_segmented_path.size())
+        {
+            x_next_coordinate = line_segmented_path[i + 1].x;
+            y_next_coordinate = line_segmented_path[i + 1].y;
+            x_coordinate = line_segmented_path[i].x;
+            y_coordinate = line_segmented_path[i].y;
+        }
+        else
+        {
+            x_next_coordinate = line_segmented_path[i].x;
+            y_next_coordinate = line_segmented_path[i].y;
+            x_coordinate = line_segmented_path[i].x;
+            y_coordinate = line_segmented_path[i].y;
+        }
+        double average_velocity = 0.8;
+        std::cout << calc_distance(x_coordinate, x_next_coordinate, y_coordinate, y_next_coordinate) << std::endl;
         double time_taken = calc_distance(x_coordinate, x_next_coordinate, y_coordinate, y_next_coordinate) / average_velocity;
 
         // std::vector<double> row_position = position_trajectory_gen(x_coordinate, x_next_coordinate, frequency, time_taken);
         // std::vector<double> col_position = position_trajectory_gen(y_coordinate, y_next_coordinate, frequency, time_taken);
-        std::vector<double> row_velocity = velocity_trajectory_gen(x_coordinate, x_next_coordinate, frequency, time_taken);
-        std::vector<double> col_velocity = velocity_trajectory_gen(y_coordinate, y_next_coordinate, frequency, time_taken);
-        std::vector<double> row_acceleration = acceleration_trajectory_gen(x_coordinate, x_next_coordinate, frequency, time_taken);
-        std::vector<double> col_acceleration = acceleration_trajectory_gen(y_coordinate, y_next_coordinate, frequency, time_taken);
+        // std::vector<double> row_velocity = velocity_trajectory_gen(x_coordinate, x_next_coordinate, frequency, time_taken);
+        // std::vector<double> col_velocity = velocity_trajectory_gen(y_coordinate, y_next_coordinate, frequency, time_taken);
+        // std::vector<double> row_acceleration = acceleration_trajectory_gen(x_coordinate, x_next_coordinate, frequency, time_taken);
+        // std::vector<double> col_acceleration = acceleration_trajectory_gen(y_coordinate, y_next_coordinate, frequency, time_taken);
 
         // for (int iteration = 0; iteration < row_position.size(); iteration++)
         // {
@@ -328,85 +396,64 @@ void trajectory_smoothing(std::ofstream &outfile,
         // {
         //     col_pose_list.push_back(col_position[iteration]);
         // }
-        for (int iteration = 0; iteration < row_velocity.size(); iteration++)
-        {
-            row_vel_list.push_back(row_velocity[iteration]);
-        }
-        for (int iteration = 0; iteration < col_velocity.size(); iteration++)
-        {
-            col_vel_list.push_back(col_velocity[iteration]);
-        }
-        for (int iteration = 0; iteration < row_acceleration.size(); iteration++)
-        {
-            row_acc_list.push_back(row_acceleration[iteration]);
-        }
-        for (int iteration = 0; iteration < col_acceleration.size(); iteration++)
-        {
-            col_acc_list.push_back(col_acceleration[iteration]);
-        }
+        // for (int iteration = 0; iteration < row_velocity.size(); iteration++)
+        // {
+        //     row_vel_list.push_back(row_velocity[iteration]);
+        // }
+        // for (int iteration = 0; iteration < col_velocity.size(); iteration++)
+        // {
+        //     col_vel_list.push_back(col_velocity[iteration]);
+        // }
+        // for (int iteration = 0; iteration < row_acceleration.size(); iteration++)
+        // {
+        //     row_acc_list.push_back(row_acceleration[iteration]);
+        // }
+        // for (int iteration = 0; iteration < col_acceleration.size(); iteration++)
+        // {
+        //     col_acc_list.push_back(col_acceleration[iteration]);
+        // }
 
         total_time = time_taken + total_time;
     }
+    std::vector<double> row_velocity = velocity_trajectory_gen(line_segmented_path[0].x, line_segmented_path[line_segmented_path.size() - 1].x, frequency, total_time);
+    std::vector<double> col_velocity = velocity_trajectory_gen(line_segmented_path[0].y, line_segmented_path[line_segmented_path.size() - 1].y, frequency, total_time);
+    std::vector<double> row_acceleration = acceleration_trajectory_gen(line_segmented_path[0].x, line_segmented_path[line_segmented_path.size() - 1].x, frequency, total_time);
+    std::vector<double> col_acceleration = acceleration_trajectory_gen(line_segmented_path[0].y, line_segmented_path[line_segmented_path.size() - 1].y, frequency, total_time);
 
     Curve *curve = new BSpline();
-    if (C)
+    if (C) //Path from point B to point C
     {
-        curve->set_steps(80);
+        curve->set_steps(CURVE_B_C);
     }
     else
     {
-        curve->set_steps(40);
+        curve->set_steps(CURVE_A_B);
     }
 
     while (line_segmented_path.size() > 0)
     {
         curve->add_way_point(line_segmented_path.front());
-        std::cout << "X: " << line_segmented_path.front().x << "\t"
-                  << "Y: " << line_segmented_path.front().y << std::endl;
+        // std::cout << "X: " << line_segmented_path.front().x << "\t"
+        //           << "Y: " << line_segmented_path.front().y << std::endl;
         line_segmented_path.pop_front();
     }
 
-    std::cout << "Number of items in row_vel_list: " << row_vel_list.size() << "\t"
-              << "Number of items in row_acc_list: " << row_acc_list.size() << "\t"
+    std::cout << "Number of items in row_vel_list: " << row_velocity.size() << "\t"
+              << "Number of items in row_acc_list: " << row_acceleration.size() << "\t"
               << "Total time taken: " << (int)(total_time * frequency) << "\t"
               << "Number of items in Spline: " << curve->node_count() << std::endl;
 
-    std::vector<double> x_spline, y_spline;
     for (int i = 0; i < curve->node_count(); i++)
     {
         quadrotor_utility::write_path(outfile, curve->node(i).x, curve->node(i).y, 1.0,
-                                      row_vel_list[i], col_vel_list[i], 0.0,
-                                      row_acc_list[i], col_acc_list[i], 0.0,
+                                      row_velocity[i], col_velocity[i], 0.0,
+                                      row_acceleration[i], col_acceleration[i], 0.0,
                                       0.0, 0.0);
     }
-
-    // std::vector<double> x_axis_tj;
-    // for (int i = 1; i <= (int)(total_time * frequency); i++)
-    // {
-    //     x_axis_tj.push_back(i / frequency);
-    // }
-    // matplotlibcpp::named_plot("X-Position", x_axis_tj, row_pose_list);
-    // matplotlibcpp::named_plot("Y-Position", x_axis_tj, col_pose_list);
-    // matplotlibcpp::named_plot("X-Velocity", x_axis_tj, row_vel_list);
-    // matplotlibcpp::named_plot("Y-Velocity", x_axis_tj, col_vel_list);
-    // matplotlibcpp::named_plot("X-Acceleration", x_axis_tj, row_acc_list);
-    // matplotlibcpp::named_plot("Y-Acceleration", x_axis_tj, col_acc_list);
-    // matplotlibcpp::title("Minimum Jerk Trajectory");
-    // matplotlibcpp::xlabel("Time [s]");
-    // matplotlibcpp::ylabel("Distance [m], Velocity [m/s] and Acceleration [m/s2]");
-
-    // for (int i = 0; i < row_pose_list.size(); i++)
-    // {
-    //     row_pose_list[i] = -row_pose_list[i];
-    // }
-    // matplotlibcpp::named_plot("Path", col_pose_list, row_pose_list);
-    // matplotlibcpp::xlabel("X-Coordinate");
-    // matplotlibcpp::ylabel("Y-Coordinate");
-
-    // matplotlibcpp::legend();
-    // matplotlibcpp::show();
-
-    quadrotor_utility::hover(outfile);
+    plot_vel_acc(total_time, frequency,
+                 row_velocity, col_velocity,
+                 row_acceleration, col_acceleration);
+    plot_position(curve);
 }
 
 void calc_coeff(std::vector<std::vector<double>> inv_matrix, double t0, double tf, double q0, double qf, double vel0, double velf, double acc0, double accf)
@@ -474,6 +521,5 @@ std::vector<std::vector<double>> calc_matrix_inverse(int n, std::vector<std::vec
     }
     return a;
 }
-
 }; // namespace trajectory_utility
 #endif
