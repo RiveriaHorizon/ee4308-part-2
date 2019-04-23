@@ -93,7 +93,7 @@ int main()
 	//end
 
 	//start of generating landing path from C//
-	// quadrotor_utility::landing(outfile);
+	quadrotor_utility::landing(outfile);
 	//end of generating landing path from C//
 
 	return 0;
