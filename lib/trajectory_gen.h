@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <deque>
 
 namespace trajectory_utility
 {
@@ -101,23 +102,11 @@ std::vector<std::vector<double>> calc_matrix_inverse(int n, std::vector<std::vec
 int calc_path_steps(int row, int col,
                     int (*traceback)[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT])
 {
-    int count = 0;
-    //Count then number of steps needed to reach the destination
-    for (row = 0; row < maze_utility::BOUNDARY_ARRAY_LIMIT; row++)
-    {
-        for (col = 0; col < maze_utility::BOUNDARY_ARRAY_LIMIT; col++)
-        {
-            if ((*traceback)[row][col] != 99 && (*traceback)[row][col] != 11111)
-            {
-                count++;
-            }
-        }
-    }
-    return count;
 }
 
 void trajectory_smoothing(std::ofstream &outfile,
-                          int (*traceback)[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT])
+                          int (*traceback)[maze_utility::BOUNDARY_ARRAY_LIMIT][maze_utility::BOUNDARY_ARRAY_LIMIT],
+                          bool C)
 {
     int loop = 0, count = 0,
         row = 0, col = 0,
@@ -132,15 +121,25 @@ void trajectory_smoothing(std::ofstream &outfile,
         row_acceleration, col_acceleration;
     std::vector<double> row_pose_list, col_pose_list,
         row_vel_list, col_vel_list,
-        row_acc_list, col_acc_list;
-    std::vector<Vector> waypointlist;
+        row_acc_list, col_acc_list,
+        direction_list;
+    std::deque<Vector> waypointlist, arraypointlist;
     int iteration = 0;
     double prev_direction = std::numeric_limits<int>::max();
     double prev_row = std::numeric_limits<int>::max();
     double prev_col = std::numeric_limits<int>::max();
 
     //Count then number of steps needed to reach the destination
-    calc_path_steps(row, col, traceback);
+    for (row = 0; row < maze_utility::BOUNDARY_ARRAY_LIMIT; row++)
+    {
+        for (col = 0; col < maze_utility::BOUNDARY_ARRAY_LIMIT; col++)
+        {
+            if ((*traceback)[row][col] != 99 && (*traceback)[row][col] != 11111)
+            {
+                count++;
+            }
+        }
+    }
 
     while (loop <= count)
     {
@@ -157,6 +156,8 @@ void trajectory_smoothing(std::ofstream &outfile,
                     {
                         i = row;
                         j = col;
+                        Vector array_coordinate = Vector(i, j, 0);
+                        arraypointlist.push_back(array_coordinate);
                         x = maze_utility::encode_coordinate(i, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER);
                         y = maze_utility::encode_coordinate(j, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER);
                         Vector coordinate = Vector(x, y, 0.0);
@@ -167,23 +168,29 @@ void trajectory_smoothing(std::ofstream &outfile,
                         i_next = row;
                         j_next = col;
                     }
+                    if (check == count - 1)
+                    {
+                        i_next = i;
+                        j_next = j;
+                    }
                 }
             }
         }
 
         direction = maze_utility::calc_heading(i_next, j_next, i, j);
+        direction_list.push_back(direction);
         x = waypointlist[loop].x;
         y = waypointlist[loop].y;
 
         if (prev_direction != direction && prev_direction != std::numeric_limits<int>::max())
         {
-            std::cout << "Direction: " << direction << "\t"
-                      << "Previous Direction: " << prev_direction << std::endl;
-            std::cout << "Loop iteration: " << loop << std::endl;
-            std::cout << "Previous x: " << prev_row << "\t"
-                      << "Previous y: " << prev_col << "\t"
-                      << "Current x: " << x << "\t"
-                      << "Current y: " << y << std::endl;
+            // std::cout << "Direction: " << direction << "\t"
+            //           << "Previous Direction: " << prev_direction << std::endl;
+            // std::cout << "Loop iteration: " << loop << std::endl;
+            // std::cout << "Previous x: " << prev_row << "\t"
+            //           << "Previous y: " << prev_col << "\t"
+            //           << "Current x: " << x << "\t"
+            //           << "Current y: " << y << std::endl;
 
             prev_direction = direction;
             double average_velocity = 0.5;
@@ -236,37 +243,118 @@ void trajectory_smoothing(std::ofstream &outfile,
         loop++;
     }
 
-    // Curve *curve = new BSpline();
-    // curve->set_steps(3);
+    std::cout << "Size of direction list: " << direction_list.size() << "\t"
+              << "Size of count: " << count << std::endl;
 
-    // while (waypointlist.size() > 0)
-    // {
-    // 	curve->add_way_point(waypointlist.front());
-    // 	waypointlist.pop_front();
-    // }
+    std::deque<Vector> new_list; //new list before spline after calculating constraints, line segments
 
-    for (int i = 1; i < row_pose_list.size(); ++i)
+    int iter;
+    double direction_h = 0;
+    double prev_direction_h = 99;
+    double calculated_constraint;
+    new_list.push_back(Vector((int)arraypointlist[0].x, (int)arraypointlist[0].y, 0.0)); //TODO: Remove 0 and change to first
+    for (iter = 0; iter < count; iter++)
     {
-        maze_utility::write_path(outfile, row_pose_list[i], col_pose_list[i], 1.0,
+        for (int j = iter + 1; j < count; j++)
+        {
+            int i_coordinate = arraypointlist[iter].x;
+            int j_coordinate = arraypointlist[iter].y;
+            int i_coordinate_next = arraypointlist[j].x;
+            int j_coordinate_next = arraypointlist[j].y;
+
+            direction_h = maze_utility::calc_heading(i_coordinate_next, j_coordinate_next, i_coordinate, j_coordinate);
+            if (direction_h > M_PI)
+            {
+                direction_h = direction_h - M_PI;
+            }
+
+            if (prev_direction_h != direction_h && prev_direction_h != 99)
+            {
+                std::cout << "J-iteration: " << j << "\t"
+                          << "Previous direction: " << prev_direction_h << "\t"
+                          << "Current Direction: " << direction_h << std::endl;
+
+                calculated_constraint = fabs((direction_h - prev_direction_h) / prev_direction_h) * 100;
+                //std::cout << "Calculated constraint: " << calculated_constraint << std::endl;
+
+                if (calculated_constraint > 30 && calculated_constraint < 62)
+                {
+                    std::cout << "Calculated constraint: " << calculated_constraint << std::endl;
+
+                    new_list.push_back(Vector(arraypointlist[j].x, arraypointlist[j].y, 0.0));
+                    prev_direction_h = maze_utility::calc_heading(arraypointlist[j].x, arraypointlist[j].y, arraypointlist[iter].x, arraypointlist[iter].y);
+                }
+                else
+                {
+                    prev_direction_h = direction_h;
+                    iter = j;
+                    break;
+                }
+            }
+            else
+            {
+                prev_direction_h = direction_h;
+            }
+        }
+        std::cout << "Iter: " << iter << std::endl;
+        if (iter == count - 1)
+        {
+            break;
+        }
+    }
+    new_list.push_back(Vector((int)arraypointlist[arraypointlist.size() - 1].x, (int)arraypointlist[arraypointlist.size() - 1].y, 0.0)); //TODO: Remove 0 and change to first
+
+    for (int i = 0; i < new_list.size(); i++)
+    {
+        new_list[i].x = maze_utility::encode_coordinate(new_list[i].x, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER);
+        new_list[i].y = maze_utility::encode_coordinate(new_list[i].y, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER);
+        std::cout << "Waypoint X: " << new_list[i].x << "\t"
+                  << "Waypoint Y: " << new_list[i].y << "\t"
+                  << i << std::endl;
+    }
+
+    Curve *curve = new BSpline();
+    if (C)
+    {
+        curve->set_steps(40);
+    }
+    else
+    {
+        curve->set_steps(20);
+    }
+
+    while (new_list.size() > 0)
+    {
+        curve->add_way_point(new_list.front());
+        new_list.pop_front();
+    }
+
+    std::cout << "Number of items in row_vel_list: " << row_vel_list.size() << "\t"
+              << "Number of items in row_acc_list: " << row_acc_list.size() << "\t"
+              << "Number of items in Spline: " << curve->node_count() << std::endl;
+
+    for (int i = 1; i < curve->node_count(); ++i)
+    {
+        maze_utility::write_path(outfile, curve->node(i).x, curve->node(i).y, 1.0,
                                  row_vel_list[i], col_vel_list[i], 0.0,
                                  row_acc_list[i], col_acc_list[i], 0.0,
                                  0.0, 0.0);
     }
 
-    // vector<double> xaxis;
-    // for (int i = 1; i < (int)round(total_time * frequency); i++)
-    // {
-    // 	xaxis.push_back(i / frequency);
-    // }
-    // matplotlibcpp::named_plot("X-Position", xaxis, row_pose_list);
-    // matplotlibcpp::named_plot("Y-Position", xaxis, col_pose_list);
-    // matplotlibcpp::named_plot("X-Velocity", xaxis, row_vel_list);
-    // matplotlibcpp::named_plot("Y-Velocity", xaxis, col_vel_list);
-    // matplotlibcpp::named_plot("X-Acceleration", xaxis, row_acc_list);
-    // matplotlibcpp::named_plot("Y-Acceleration", xaxis, col_acc_list);
-    // matplotlibcpp::title("Minimum Jerk Trajectory");
-    // matplotlibcpp::xlabel("Time [s]");
-    // matplotlibcpp::ylabel("Distance [m], Velocity [m/s] and Acceleration [m/s2]");
+    std::vector<double> x_axis_tj;
+    for (int i = 1; i < round(total_time * frequency); i++)
+    {
+        x_axis_tj.push_back(i / frequency);
+    }
+    matplotlibcpp::named_plot("X-Position", x_axis_tj, row_pose_list);
+    matplotlibcpp::named_plot("Y-Position", x_axis_tj, col_pose_list);
+    matplotlibcpp::named_plot("X-Velocity", x_axis_tj, row_vel_list);
+    matplotlibcpp::named_plot("Y-Velocity", x_axis_tj, col_vel_list);
+    matplotlibcpp::named_plot("X-Acceleration", x_axis_tj, row_acc_list);
+    matplotlibcpp::named_plot("Y-Acceleration", x_axis_tj, col_acc_list);
+    matplotlibcpp::title("Minimum Jerk Trajectory");
+    matplotlibcpp::xlabel("Time [s]");
+    matplotlibcpp::ylabel("Distance [m], Velocity [m/s] and Acceleration [m/s2]");
 
     // for (int i = 0; i < row_pose_list.size(); i++)
     // {
@@ -275,8 +363,8 @@ void trajectory_smoothing(std::ofstream &outfile,
     // matplotlibcpp::named_plot("Path", col_pose_list, row_pose_list);
     // matplotlibcpp::xlabel("X-Coordinate");
     // matplotlibcpp::ylabel("Y-Coordinate");
-    // matplotlibcpp::legend();
-    // matplotlibcpp::show();
+    matplotlibcpp::legend();
+    matplotlibcpp::show();
 
     int pause = 0;
     //pause quadrotor if serial input is true

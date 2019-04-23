@@ -2,6 +2,7 @@
 
 //From cpp-spline
 #include "BSpline.h"
+#include "Curve.h"
 #include "Vector.h"
 //From matplotlibcpp
 #include "matplotlibcpp.h"
@@ -50,6 +51,8 @@ int main()
 	maze_utility::take_off(outfile);
 	//end of generating take-off path from A//
 
+	maze_utility::reset_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback, &G_cost, &H_cost);
+
 	//start generating path from A to B//
 	// floodfill(decode_coordinate(POINT_A_Y), decode_coordinate(POINT_A_X), decode_coordinate(POINT_B_Y), decode_coordinate(POINT_B_X));
 	maze_algorithm::Astar(maze_utility::decode_coordinate(maze_utility::POINT_A_Y, maze_utility::CARTESIAN_LIMIT, maze_utility::CARTESIAN_MULTIPLIER),
@@ -60,10 +63,10 @@ int main()
 	//end of generating path from A to B//
 
 	//prints array to console for debugging
-	// maze_utility::print_array(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback);
+	// maze_utility::print_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback);
 
 	//start interpolating path planned and outputs to path.txt
-	trajectory_utility::trajectory_smoothing(outfile, &traceback);
+	trajectory_utility::trajectory_smoothing(outfile, &traceback, false);
 	//end trajectory_smoothing function
 
 	maze_utility::reset_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback, &G_cost, &H_cost);
@@ -81,7 +84,7 @@ int main()
 	// maze_utility::print_maze(maze_utility::BOUNDARY_ARRAY_LIMIT, &maze, &traceback);
 
 	//start interpolating path planned and outputs to path.txt
-	trajectory_utility::trajectory_smoothing(outfile, &traceback);
+	trajectory_utility::trajectory_smoothing(outfile, &traceback, true);
 	//end reset function
 
 	//pause quadrotor if serial input is true

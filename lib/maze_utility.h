@@ -93,58 +93,83 @@ double encode_coordinate(int input, int cartesian_limit, int cartesian_multiplie
     return ((double)input / cartesian_multiplier - cartesian_limit) * -1;
 }
 
-float calc_heading(int i_next, int j_next, int i, int j)
+float calc_heading(int i_new, int j_new, int i, int j)
 {
-    //North-West	North	 	North-East
-    //West	          +				  East
-    //South-West	South	    South-East
+    //North-West  North     North-East
+    //West            +          East
+    //South-West  South      South-East
 
     // Next path on the East
-    if (i_next == i && j_next > j)
+    if (i_new == i && j_new > j)
     {
         return 0;
     }
 
     // Next path on the the North-East
-    else if (i_next < i && j_next > j)
+    else if (i_new < i && j_new > j)
     {
-        return M_PI / 4;
+
+        double height = abs(i - i_new);
+        double base = abs(j_new - j);
+        double pythagoras = sqrt((height * height) + (base * base));
+        double angle = asin(height / pythagoras);
+
+        return angle;
     }
 
     // Next path on the North
-    else if (i_next < i && j_next == j)
+    else if (i_new < i && j_new == j)
     {
         return M_PI / 2;
     }
 
     // Next path on the North-West
-    else if (i_next < i && j_next < j)
+    else if (i_new < i && j_new < j)
     {
-        return (3 * M_PI) / 4;
+        double height = abs(i - i_new);
+        double base = abs(j - j_new);
+        double pythagoras = sqrt((height * height) + (base * base));
+        double angle = M_PI - asin(height / pythagoras);
+
+        return angle;
     }
 
     // Next path on the West
-    else if (i_next == i && j_next < j)
+    else if (i_new == i && j_new < j)
     {
         return M_PI;
     }
 
     // Next path on the South-West
-    else if (i_next > i && j_next < j)
+    else if (i_new > i && j_new < j)
     {
-        return (5 * M_PI) / 4;
+        double height = abs(i_new - i);
+        double base = abs(j - j_new);
+        double pythagoras = sqrt((height * height) + (base * base));
+        double angle = M_PI + asin(height / pythagoras);
+
+        return angle;
     }
 
     // Next path on the South
-    else if (i_next > i && j_next == j)
+    else if (i_new > i && j_new == j)
     {
         return (3 * M_PI) / 2;
     }
 
     // Next path on the South-East
-    else if (i_next > i && j_next > j)
+    else if (i_new > i && j_new > j)
     {
-        return (7 * M_PI) / 4;
+        double height = abs(i_new - i);
+        double base = abs(j_new - j);
+        double pythagoras = sqrt((height * height) + (base * base));
+        double angle = (2 * M_PI) - asin(height / pythagoras);
+
+        return angle;
+    }
+    else if (i_new == i && j_new == j)
+    {
+        return 0; // TODO: Should change to previous direction
     }
 }
 
@@ -164,14 +189,14 @@ void write_path(std::ofstream &outfile,
 void take_off(std::ofstream &outfile)
 {
     double incr_vel = 0.0;
-    for (int i = 0; i < 501; i++)
+    for (int i = 0; i < 201; i++)
     {
         maze_utility::write_path(outfile,
                                  maze_utility::POINT_A_X, maze_utility::POINT_A_Y, incr_vel,
                                  0.0, 0.0, 0.3,
                                  0.0, 0.0, 0.0,
                                  0.0, 0.0);
-        incr_vel = incr_vel + 0.002;
+        incr_vel = incr_vel + 0.005;
     }
 
     for (int i = 0; i < 101; i++)

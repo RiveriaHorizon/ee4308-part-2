@@ -194,6 +194,7 @@ void Astar(int start_x, int start_y, int end_x, int end_y,
             }
         }
     }
+
     (*maze)[start_y][start_x] = (*traceback)[start_y][start_x] = 0;
     //End of generate F cost for each cells//
 
