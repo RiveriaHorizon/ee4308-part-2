@@ -331,7 +331,7 @@ void trajectory_smoothing(std::ofstream &outfile,
                           bool C)
 {
     // Constants initialization
-    const int FREQUENCY_A_B = 10; // Frequency from A to B for Vel-Acc profiling
+    const int FREQUENCY_A_B = 15; // Frequency from A to B for Vel-Acc profiling
     const int FREQUENCY_B_C = 15; // Frequency from B to C for Vel-Acc profiling
     const double STEP_MULTIPLIER = 0.8;
 
