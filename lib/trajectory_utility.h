@@ -292,6 +292,7 @@ void plot_vel_acc(double total_time, double frequency,
         x_axis_tj.push_back(i / frequency);
     }
 
+    matplotlibcpp::clf();
     matplotlibcpp::named_plot("X-Velocity", x_axis_tj, row_velocity);
     matplotlibcpp::named_plot("Y-Velocity", x_axis_tj, col_velocity);
     matplotlibcpp::named_plot("X-Acceleration", x_axis_tj, row_acceleration);
@@ -301,6 +302,7 @@ void plot_vel_acc(double total_time, double frequency,
     matplotlibcpp::ylabel("Velocity [m/s] and Acceleration [m/s2]");
     matplotlibcpp::legend();
     matplotlibcpp::save("graph_plots/vel_acc_" + name + ".png");
+    matplotlibcpp::close();
 }
 
 void plot_position(Curve *curve, std::string name)
@@ -312,6 +314,7 @@ void plot_position(Curve *curve, std::string name)
         y_spline.push_back(curve->node(i).y);
     }
 
+    matplotlibcpp::clf();
     matplotlibcpp::named_plot("Path", y_spline, x_spline);
     matplotlibcpp::xlim(3, -3);
     matplotlibcpp::ylim(-3, 3);
@@ -320,6 +323,7 @@ void plot_position(Curve *curve, std::string name)
 
     matplotlibcpp::legend();
     matplotlibcpp::save("graph_plots/position_" + name + ".png");
+    matplotlibcpp::close();
 }
 
 void trajectory_smoothing(std::ofstream &outfile,
@@ -328,7 +332,8 @@ void trajectory_smoothing(std::ofstream &outfile,
 {
     // Constants initialization
     const int FREQUENCY_A_B = 10; // Frequency from A to B for Vel-Acc profiling
-    const int FREQUENCY_B_C = 20; // Frequency from B to C for Vel-Acc profiling
+    const int FREQUENCY_B_C = 15; // Frequency from B to C for Vel-Acc profiling
+    const double STEP_MULTIPLIER = 0.8;
 
     // Variable initialization
     int iteration = 0;
@@ -363,7 +368,7 @@ void trajectory_smoothing(std::ofstream &outfile,
         x_coordinate, y_coordinate;
     for (int i = 0; i < line_segmented_path.size(); i++)
     {
-        if (i != line_segmented_path.size())
+        if (i != line_segmented_path.size() - 1)
         {
             x_next_coordinate = line_segmented_path[i + 1].x;
             y_next_coordinate = line_segmented_path[i + 1].y;
@@ -388,7 +393,7 @@ void trajectory_smoothing(std::ofstream &outfile,
     std::vector<double> col_acceleration = acceleration_trajectory_gen(line_segmented_path[0].y, line_segmented_path[line_segmented_path.size() - 1].y, frequency, total_time);
 
     Curve *curve = new BSpline();
-    curve->set_steps(total_time * frequency / line_segmented_path.size());
+    curve->set_steps(total_time * frequency / (STEP_MULTIPLIER * line_segmented_path.size()));
 
     while (line_segmented_path.size() > 0)
     {
