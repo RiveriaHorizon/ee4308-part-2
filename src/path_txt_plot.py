@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 
 def path_plot():
@@ -13,18 +14,19 @@ def path_plot():
     x_axis = [i for i in range(1, len(x_pose) + 1)]
 
     plt.title('Path Text File Plot')
-    plt.plot(x_axis, x_pose)
-    plt.plot(x_axis, y_pose)
-    plt.plot(x_axis, z_pose)
-    plt.plot(x_axis, x_vel)
-    plt.plot(x_axis, y_vel)
+    # plt.plot(x_axis, x_pose)
+    # plt.plot(x_axis, y_pose)
+    # plt.plot(x_axis, z_pose)
+    # plt.plot(x_axis, x_vel)
+    # plt.plot(x_axis, y_vel)
     plt.plot(x_axis, x_acc)
     plt.plot(x_axis, y_acc)
     plt.xlabel('Time [s]')
-    plt.ylabel('Distance [m], Velocity [m/s] and Acceleration [m/s2]')
+    plt.ylabel('Acceleration [m/s/s]')
     plt.legend(['pos_x', 'pos_y', 'pos_z', 'vel_x',
                 'vel_y', 'acc_x', 'acc_y'])
-    plt.savefig('../build/graph_plots/path_txt_plot.png', dpi=700)
+    # plt.show()
+    plt.savefig('../build/graph_plots/path_txt_acc_plot.png', dpi=700)
 
 
 if __name__ == "__main__":
