@@ -2,10 +2,10 @@
 #define TRAJECTORY_GEN_H
 
 #include <algorithm>
-#include <iostream>
 #include <cmath>
-#include <vector>
 #include <deque>
+#include <iostream>
+#include <vector>
 
 namespace trajectory_utility
 {
@@ -67,7 +67,7 @@ void trajectory_smoothing(std::ofstream &outfile,
     float x = 0.0, y = 0.0;
     double direction = 0.0;
     double total_time = 0.0;
-    double frequency = 20;
+    double frequency = 10;
     std::vector<double> row_position, col_position,
         row_velocity, col_velocity,
         row_acceleration, col_acceleration;
@@ -299,23 +299,23 @@ void trajectory_smoothing(std::ofstream &outfile,
         x_axis_tj.push_back(i / frequency);
     }
 
-    matplotlibcpp::named_plot("X-Position", x_axis_tj, row_pose_list);
-    matplotlibcpp::named_plot("Y-Position", x_axis_tj, col_pose_list);
-    matplotlibcpp::named_plot("X-Velocity", x_axis_tj, row_vel_list);
-    matplotlibcpp::named_plot("Y-Velocity", x_axis_tj, col_vel_list);
-    matplotlibcpp::named_plot("X-Acceleration", x_axis_tj, row_acc_list);
-    matplotlibcpp::named_plot("Y-Acceleration", x_axis_tj, col_acc_list);
-    matplotlibcpp::title("Minimum Jerk Trajectory");
-    matplotlibcpp::xlabel("Time [s]");
-    matplotlibcpp::ylabel("Distance [m], Velocity [m/s] and Acceleration [m/s2]");
+    // matplotlibcpp::named_plot("X-Position", x_axis_tj, row_pose_list);
+    // matplotlibcpp::named_plot("Y-Position", x_axis_tj, col_pose_list);
+    // matplotlibcpp::named_plot("X-Velocity", x_axis_tj, row_vel_list);
+    // matplotlibcpp::named_plot("Y-Velocity", x_axis_tj, col_vel_list);
+    // matplotlibcpp::named_plot("X-Acceleration", x_axis_tj, row_acc_list);
+    // matplotlibcpp::named_plot("Y-Acceleration", x_axis_tj, col_acc_list);
+    // matplotlibcpp::title("Minimum Jerk Trajectory");
+    // matplotlibcpp::xlabel("Time [s]");
+    // matplotlibcpp::ylabel("Distance [m], Velocity [m/s] and Acceleration [m/s2]");
 
     // matplotlibcpp::named_plot("Path", col_pose_list, row_pose_list);
     // matplotlibcpp::xlim(3, -3);
     // matplotlibcpp::ylim(-3, 3);
     // matplotlibcpp::xlabel("Y-Coordinate");
     // matplotlibcpp::ylabel("X-Coordinate");
-    matplotlibcpp::legend();
-    matplotlibcpp::show();
+    // matplotlibcpp::legend();
+    // matplotlibcpp::show();
     // matplotlibcpp::save("./plot_pose_vel_acc.png");
 
     int pause = 0;
