@@ -298,6 +298,7 @@ void trajectory_smoothing(std::ofstream &outfile,
     {
         x_axis_tj.push_back(i / frequency);
     }
+
     matplotlibcpp::named_plot("X-Position", x_axis_tj, row_pose_list);
     matplotlibcpp::named_plot("Y-Position", x_axis_tj, col_pose_list);
     matplotlibcpp::named_plot("X-Velocity", x_axis_tj, row_vel_list);
@@ -308,15 +309,14 @@ void trajectory_smoothing(std::ofstream &outfile,
     matplotlibcpp::xlabel("Time [s]");
     matplotlibcpp::ylabel("Distance [m], Velocity [m/s] and Acceleration [m/s2]");
 
-    // for (int i = 0; i < row_pose_list.size(); i++)
-    // {
-    //     row_pose_list[i] = -row_pose_list[i];
-    // }
     // matplotlibcpp::named_plot("Path", col_pose_list, row_pose_list);
-    // matplotlibcpp::xlabel("X-Coordinate");
-    // matplotlibcpp::ylabel("Y-Coordinate");
+    // matplotlibcpp::xlim(3, -3);
+    // matplotlibcpp::ylim(-3, 3);
+    // matplotlibcpp::xlabel("Y-Coordinate");
+    // matplotlibcpp::ylabel("X-Coordinate");
     matplotlibcpp::legend();
     matplotlibcpp::show();
+    // matplotlibcpp::save("./plot_pose_vel_acc.png");
 
     int pause = 0;
     //pause quadrotor if serial input is true
